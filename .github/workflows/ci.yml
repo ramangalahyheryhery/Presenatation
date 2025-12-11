@@ -1,49 +1,31 @@
-name: Weather App CI
+name: Backend CI
 
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
     branches:
-      - main
+      - master
 
 jobs:
-  build-test:
+  build-backend:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout du code
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      # 2️⃣ Installer Docker et Docker Compose
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v2
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
 
-      - name: Install Docker Compose
-        run: sudo apt-get update && sudo apt-get install -y docker-compose
+    - name: Install backend dependencies
+      working-directory: ./backend
+      run: npm install
 
-      # 3️⃣ Nettoyer l'ancien workspace (si containers existants)
-      - name: Stop and remove old containers
-        run: |
-          docker-compose down || true
-          docker system prune -f
+    - name: Run backend tests
+      working-directory: ./backend
+      run: npm test
 
-      # 4️⃣ Build les images Docker
-      - name: Build Docker images
-        run: docker-compose build
-
-      # 5️⃣ Lancer les containers
-      - name: Run Docker Compose
-        run: docker-compose up -d
-
-      # 6️⃣ Tester avec curl
-      - name: Test backend endpoint
-        run: |
-          sleep 5  # attendre que le serveur soit prêt
-          curl -f http://localhost:5000 || exit 1
-
-      # 7️⃣ Stop et cleanup
-      - name: Stop Docker Compose
-        run: docker-compose down
