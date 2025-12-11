@@ -1,33 +1,49 @@
-name: CI/CD Docker
+name: Weather App CI
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  build-and-push:
+  build-test:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
+      # 1️⃣ Checkout du code
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      # Build backend
-      - name: Build backend Docker image
-        run: docker build -t monuser/backend:latest ./backend
+      # 2️⃣ Installer Docker et Docker Compose
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v2
 
-      # Build frontend
-      - name: Build frontend Docker image
-        run: docker build -t monuser/frontend:latest ./frontend
+      - name: Install Docker Compose
+        run: sudo apt-get update && sudo apt-get install -y docker-compose
 
-      # Login DockerHub
-      - name: Login to DockerHub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+      # 3️⃣ Nettoyer l'ancien workspace (si containers existants)
+      - name: Stop and remove old containers
+        run: |
+          docker-compose down || true
+          docker system prune -f
 
-      # Push images
-      - name: Push backend image
-        run: docker push monuser/backend:latest
+      # 4️⃣ Build les images Docker
+      - name: Build Docker images
+        run: docker-compose build
 
-      - name: Push frontend image
-        run: docker push monuser/frontend:latest
+      # 5️⃣ Lancer les containers
+      - name: Run Docker Compose
+        run: docker-compose up -d
+
+      # 6️⃣ Tester avec curl
+      - name: Test backend endpoint
+        run: |
+          sleep 5  # attendre que le serveur soit prêt
+          curl -f http://localhost:5000 || exit 1
+
+      # 7️⃣ Stop et cleanup
+      - name: Stop Docker Compose
+        run: docker-compose down
