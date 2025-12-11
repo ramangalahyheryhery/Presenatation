@@ -1,31 +1,35 @@
-name: Backend CI
+name: CI Docker Fullstack App
 
 on:
   push:
-    branches:
-      - master
+    branches: [ "master" ]
   pull_request:
-    branches:
-      - master
+    branches: [ "master" ]
 
 jobs:
-  build-backend:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: ✅ Checkout source code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '20'
+      - name: 🐳 Set up Docker
+        uses: docker/setup-buildx-action@v3
 
-    - name: Install backend dependencies
-      working-directory: ./backend
-      run: npm install
+      - name: 🔧 Build containers
+        run: |
+          docker compose build
 
-    - name: Run backend tests
-      working-directory: ./backend
-      run: npm test
+      - name: 🚀 Run containers
+        run: |
+          docker compose up -d
+
+      - name: ✅ Check running containers
+        run: |
+          docker ps
+
+      - name: 🧹 Stop containers
+        run: |
+          docker compose downt
 
